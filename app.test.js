@@ -2,45 +2,33 @@
 const request = require("supertest");
 const app = require("./app"); // Import the app logic
 
-let server; // Define a variable to hold the server instance
-
-// This block runs once before all tests
-beforeAll((done) => {
-  // Start the server on a specific port for testing
-  server = app.listen(3000, () => {
-    console.log("Test server running on port 3000");
-    done(); // Signal that the setup is complete
-  });
-});
-
-// This block runs once after all tests are finished
-afterAll((done) => {
-  // Shut down the server and release the port
-  server.close(done);
-});
+// Use supertest's built-in functionality to test the app directly
+// This avoids port conflicts in CI/CD environments like Jenkins
+// Supertest automatically handles server lifecycle without manual port management
 
 describe("API Endpoints", () => {
   it("should return a 200 OK status and welcome message for the root endpoint", async () => {
-    // Test against the running server
-    const res = await request(server).get("/");
+    // Test against the app directly using supertest
+    // Supertest will automatically start and stop the server for each request
+    const res = await request(app).get("/");
     expect(res.statusCode).toEqual(200);
     expect(res.text).toContain("Welcome to the CI/CD Workshop!");
   });
 
-  // 新增這裡
   it("should return a valid ISO-formatted date string for /time endpoint", async () => {
-    const res = await request(server).get("/time");
+    // Test the /time endpoint
+    const res = await request(app).get("/time");
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty("time");
     
     // Validate ISO format: YYYY-MM-DDTHH:mm:ss.sssZ
+    // ISO 8601 format with milliseconds and UTC timezone indicator
     const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
     expect(res.body.time).toMatch(isoDateRegex);
     
-    // Verify it's a valid date
+    // Verify it's a valid date by parsing and comparing
+    // This ensures the string represents a valid date object
     const date = new Date(res.body.time);
     expect(date.toISOString()).toBe(res.body.time);
   });
-  // 到這裡
-
 });
