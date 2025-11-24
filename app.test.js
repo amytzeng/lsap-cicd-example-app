@@ -26,4 +26,21 @@ describe("API Endpoints", () => {
     expect(res.statusCode).toEqual(200);
     expect(res.text).toContain("Welcome to the CI/CD Workshop!");
   });
+
+  // 新增這裡
+  it("should return a valid ISO-formatted date string for /time endpoint", async () => {
+    const res = await request(server).get("/time");
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty("time");
+    
+    // Validate ISO format: YYYY-MM-DDTHH:mm:ss.sssZ
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+    expect(res.body.time).toMatch(isoDateRegex);
+    
+    // Verify it's a valid date
+    const date = new Date(res.body.time);
+    expect(date.toISOString()).toBe(res.body.time);
+  });
+  // 到這裡
+
 });

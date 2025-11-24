@@ -8,4 +8,11 @@ app.get("/", (req, res) => {
     .send("<h1>Welcome to the CI/CD Workshop!</h1>");
 });
 
+// Add time endpoint 新增這裡
+app.get("/time", (req, res) => {
+  const currentTime = new Date().toISOString();
+  res.status(200).json({ time: currentTime });
+});
+// 到這裡
+
 module.exports = app;
