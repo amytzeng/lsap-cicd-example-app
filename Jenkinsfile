@@ -79,11 +79,29 @@ pipeline {
                         ${fullImageName}
                     """
                     
-                    // Wait for container to start
-                    sleep(time: 5, unit: 'SECONDS')
+                    // Wait for container to start and verify health endpoint with retry
+                    def maxRetries = 10
+                    def retryCount = 0
+                    def healthCheckPassed = false
                     
-                    // Verify health endpoint
-                    sh "curl -f http://localhost:8081/health || exit 1"
+                    while (retryCount < maxRetries && !healthCheckPassed) {
+                        sleep(time: 2, unit: 'SECONDS')
+                        def exitCode = sh(
+                            script: "curl -f http://localhost:8081/health || exit 1",
+                            returnStatus: true
+                        )
+                        if (exitCode == 0) {
+                            healthCheckPassed = true
+                            echo "Health check passed after ${retryCount + 1} attempt(s)"
+                        } else {
+                            retryCount++
+                            echo "Health check failed, retrying... (${retryCount}/${maxRetries})"
+                        }
+                    }
+                    
+                    if (!healthCheckPassed) {
+                        error("Health check failed after ${maxRetries} attempts")
+                    }
                 }
             }
         }
@@ -147,11 +165,29 @@ pipeline {
                         ${prodImageName}
                     """
                     
-                    // Wait for container to start
-                    sleep(time: 5, unit: 'SECONDS')
+                    // Wait for container to start and verify health endpoint with retry
+                    def maxRetries = 10
+                    def retryCount = 0
+                    def healthCheckPassed = false
                     
-                    // Verify health endpoint
-                    sh "curl -f http://localhost:8082/health || exit 1"
+                    while (retryCount < maxRetries && !healthCheckPassed) {
+                        sleep(time: 2, unit: 'SECONDS')
+                        def exitCode = sh(
+                            script: "curl -f http://localhost:8082/health || exit 1",
+                            returnStatus: true
+                        )
+                        if (exitCode == 0) {
+                            healthCheckPassed = true
+                            echo "Health check passed after ${retryCount + 1} attempt(s)"
+                        } else {
+                            retryCount++
+                            echo "Health check failed, retrying... (${retryCount}/${maxRetries})"
+                        }
+                    }
+                    
+                    if (!healthCheckPassed) {
+                        error("Health check failed after ${maxRetries} attempts")
+                    }
                 }
             }
         }
