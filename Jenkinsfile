@@ -72,12 +72,31 @@ pipeline {
                     sh "docker rm -f dev-app || true"
                     
                     // Run new container on port 8081
-                    sh """
-                        docker run -d \\
-                        --name dev-app \\
-                        -p 8081:3000 \\
-                        ${fullImageName}
-                    """
+                    def containerId = sh(
+                        script: """
+                            docker run -d \\
+                            --name dev-app \\
+                            -p 8081:3000 \\
+                            ${fullImageName}
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    
+                    echo "Container started with ID: ${containerId}"
+                    
+                    // Wait a moment for container to initialize
+                    sleep(time: 3, unit: 'SECONDS')
+                    
+                    // Check container status
+                    def containerStatus = sh(
+                        script: "docker ps -a --filter name=dev-app --format '{{.Status}}'",
+                        returnStdout: true
+                    ).trim()
+                    echo "Container status: ${containerStatus}"
+                    
+                    // Show container logs for debugging
+                    echo "Container logs:"
+                    sh "docker logs dev-app || true"
                     
                     // Wait for container to start and verify health endpoint with retry
                     def maxRetries = 10
@@ -86,8 +105,22 @@ pipeline {
                     
                     while (retryCount < maxRetries && !healthCheckPassed) {
                         sleep(time: 2, unit: 'SECONDS')
+                        
+                        // Check if container is still running
+                        def isRunning = sh(
+                            script: "docker ps --filter name=dev-app --format '{{.Names}}' | grep -q dev-app",
+                            returnStatus: true
+                        )
+                        
+                        if (isRunning != 0) {
+                            echo "Container is not running. Showing logs:"
+                            sh "docker logs dev-app || true"
+                            error("Container dev-app stopped unexpectedly")
+                        }
+                        
+                        // Try to check health from container itself first, then from host
                         def exitCode = sh(
-                            script: "curl -f http://localhost:8081/health || exit 1",
+                            script: "docker exec dev-app curl -f http://localhost:3000/health 2>/dev/null || curl -f http://localhost:8081/health 2>/dev/null || exit 1",
                             returnStatus: true
                         )
                         if (exitCode == 0) {
@@ -96,10 +129,19 @@ pipeline {
                         } else {
                             retryCount++
                             echo "Health check failed, retrying... (${retryCount}/${maxRetries})"
+                            if (retryCount == 3) {
+                                // Show logs after a few failed attempts
+                                echo "Container logs after failed attempts:"
+                                sh "docker logs dev-app || true"
+                            }
                         }
                     }
                     
                     if (!healthCheckPassed) {
+                        echo "Final container logs:"
+                        sh "docker logs dev-app || true"
+                        echo "Container status:"
+                        sh "docker ps -a --filter name=dev-app || true"
                         error("Health check failed after ${maxRetries} attempts")
                     }
                 }
@@ -158,12 +200,31 @@ pipeline {
                     sh "docker rm -f prod-app || true"
                     
                     // Run new container on port 8082
-                    sh """
-                        docker run -d \\
-                        --name prod-app \\
-                        -p 8082:3000 \\
-                        ${prodImageName}
-                    """
+                    def containerId = sh(
+                        script: """
+                            docker run -d \\
+                            --name prod-app \\
+                            -p 8082:3000 \\
+                            ${prodImageName}
+                        """,
+                        returnStdout: true
+                    ).trim()
+                    
+                    echo "Container started with ID: ${containerId}"
+                    
+                    // Wait a moment for container to initialize
+                    sleep(time: 3, unit: 'SECONDS')
+                    
+                    // Check container status
+                    def containerStatus = sh(
+                        script: "docker ps -a --filter name=prod-app --format '{{.Status}}'",
+                        returnStdout: true
+                    ).trim()
+                    echo "Container status: ${containerStatus}"
+                    
+                    // Show container logs for debugging
+                    echo "Container logs:"
+                    sh "docker logs prod-app || true"
                     
                     // Wait for container to start and verify health endpoint with retry
                     def maxRetries = 10
@@ -172,8 +233,22 @@ pipeline {
                     
                     while (retryCount < maxRetries && !healthCheckPassed) {
                         sleep(time: 2, unit: 'SECONDS')
+                        
+                        // Check if container is still running
+                        def isRunning = sh(
+                            script: "docker ps --filter name=prod-app --format '{{.Names}}' | grep -q prod-app",
+                            returnStatus: true
+                        )
+                        
+                        if (isRunning != 0) {
+                            echo "Container is not running. Showing logs:"
+                            sh "docker logs prod-app || true"
+                            error("Container prod-app stopped unexpectedly")
+                        }
+                        
+                        // Try to check health from container itself first, then from host
                         def exitCode = sh(
-                            script: "curl -f http://localhost:8082/health || exit 1",
+                            script: "docker exec prod-app curl -f http://localhost:3000/health 2>/dev/null || curl -f http://localhost:8082/health 2>/dev/null || exit 1",
                             returnStatus: true
                         )
                         if (exitCode == 0) {
@@ -182,10 +257,19 @@ pipeline {
                         } else {
                             retryCount++
                             echo "Health check failed, retrying... (${retryCount}/${maxRetries})"
+                            if (retryCount == 3) {
+                                // Show logs after a few failed attempts
+                                echo "Container logs after failed attempts:"
+                                sh "docker logs prod-app || true"
+                            }
                         }
                     }
                     
                     if (!healthCheckPassed) {
+                        echo "Final container logs:"
+                        sh "docker logs prod-app || true"
+                        echo "Container status:"
+                        sh "docker ps -a --filter name=prod-app || true"
                         error("Health check failed after ${maxRetries} attempts")
                     }
                 }
