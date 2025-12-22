@@ -43,19 +43,42 @@ pipeline {
             when {
                 branch 'dev'
             }
+            tools {
+                nodejs 'NodeJS'
+            }
             steps {
                 script {
-                    def imageTag = "dev-${env.BUILD_NUMBER}"
-                    def fullImageName = "${env.DOCKER_HUB_USER}/${env.DOCKER_IMAGE_NAME}:${imageTag}"
+                    // Read version from package.json dynamically
+                    def appVersion = sh(
+                        script: "node -p \"require('./package.json').version\"",
+                        returnStdout: true
+                    ).trim()
                     
-                    // Build Docker image
-                    sh "docker build -t ${fullImageName} ."
+                    echo "Application version from package.json: ${appVersion}"
+                    
+                    // Build number tag for tracking individual builds
+                    def buildNumberTag = "dev-${env.BUILD_NUMBER}"
+                    def buildNumberImageName = "${env.DOCKER_HUB_USER}/${env.DOCKER_IMAGE_NAME}:${buildNumberTag}"
+                    
+                    // Semantic version tag (e.g., v1.1.0)
+                    def semanticVersionTag = "v${appVersion}"
+                    def semanticVersionImageName = "${env.DOCKER_HUB_USER}/${env.DOCKER_IMAGE_NAME}:${semanticVersionTag}"
+                    
+                    // Build Docker image with build number tag
+                    sh "docker build -t ${buildNumberImageName} ."
+                    
+                    // Create semantic version tag from the same image
+                    sh "docker tag ${buildNumberImageName} ${semanticVersionImageName}"
                     
                     // Login to Docker Hub
                     sh "echo ${env.DOCKER_HUB_CREDENTIALS_PSW} | docker login -u ${env.DOCKER_HUB_CREDENTIALS_USR} --password-stdin"
                     
-                    // Push to Docker Hub
-                    sh "docker push ${fullImageName}"
+                    // Push both tags to Docker Hub
+                    echo "Pushing build number tag: ${buildNumberTag}"
+                    sh "docker push ${buildNumberImageName}"
+                    
+                    echo "Pushing semantic version tag: ${semanticVersionTag}"
+                    sh "docker push ${semanticVersionImageName}"
                 }
             }
         }
