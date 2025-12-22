@@ -5,7 +5,7 @@ const app = express();
 app.get("/", (req, res) => {
   res
     .status(200)
-    .send("<h1>Welcome to the CI/CD Workshop! - Staging Environment</h1>");
+    .send("<h1>Welcome to the CI/CD Workshop!</h1>");
 });
 
 // Add time endpoint 新增這裡
