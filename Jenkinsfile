@@ -155,8 +155,9 @@ pipeline {
                 }
             }
         }
-
-        post {
+    }
+    
+    post {
         failure {
             script {
                 def message = """
@@ -178,7 +179,6 @@ pipeline {
                     ${env.DISCORD_WEBHOOK_URL}
                 """
             }
-        }
         }
     }
 }
