@@ -5,7 +5,11 @@ const app = express();
 app.get("/", (req, res) => {
   res
     .status(200)
+<<<<<<< HEAD
     .send("<h1>Welcome to the CI/CD Workshop!</h1>");
+=======
+    .send("<h1>Welcome to the CI/CD Workshop! - test 1</h1>");
+>>>>>>> dev
 });
 
 // Add time endpoint 新增這裡
