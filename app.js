@@ -1,6 +1,9 @@
 // app.js
 const express = require("express");
 const app = express();
+// 故意引入 ESLint 錯誤：未使用的變數
+const unusedVariable = "This will cause a linting error";
+
 
 app.get("/", (req, res) => {
   res
