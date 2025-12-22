@@ -16,4 +16,3 @@ app.get("/time", (req, res) => {
 // 到這裡
 
 module.exports = app;
-var a =
