@@ -15,4 +15,10 @@ app.get("/time", (req, res) => {
 });
 // 到這裡
 
+// Health check endpoint for deployment verification
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "healthy" });
+});
+
 module.exports = app;
+var a =
